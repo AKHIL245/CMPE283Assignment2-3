@@ -44,11 +44,12 @@ Below are the Steps followed to completed Assignment 2.
                          
 9) Now run the below command.    
    sudo qemu-system-x86_64 -enable-kvm -hda bionic-server-cloudimg-amd64.img -drive "file=user-data.img,format=raw" -m 512 -curses -nographic   
-                         
+   Now you will be redirected to the New Terminal of Nested VM. Login by providing the username as ubuntu and password as akhil.  
 10) To check the functionality update and install the cpuid package.  
     sudo apt-get update  
     sudo apt-get install cpuid  
                          
 11) Testing the functionality for 0x4ffffffc and 0x4ffffffd  
-    ![Screenshot 2022-12-05 220230](https://user-images.githubusercontent.com/45283425/205833988-2923ba5a-5cbc-4c7e-aac7-6d7e6a711ef1.png)  
+    ![Screenshot 2022-12-05 220230](https://user-images.githubusercontent.com/45283425/205833988-2923ba5a-5cbc-4c7e-aac7-6d7e6a711ef1.png)   
+    Now run Sudo dmesg to see the below output.  
     ![Screenshot 2022-12-05 220355](https://user-images.githubusercontent.com/45283425/205834224-50b6d0fd-c56b-433c-b5cf-d8a267605281.png)  
