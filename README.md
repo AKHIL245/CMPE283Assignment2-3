@@ -31,16 +31,16 @@ Below are the Steps followed to completed Assignment 2.
   sudo apt update && sudo apt install qemu-kvm -y  
   
 8) Now change the password for the ubuntu cloud image.   
-   sudo apt-get install cloud-image-utils    
+   a)sudo apt-get install cloud-image-utils    
    
-    cat >user-data <<EOF     
+   b) cat >user-data <<EOF     
     #cloud-config     
     password: akhil  
     chpasswd: { expire: False }  
     ssh_pwauth: True  
-    EOF    
+    EOF  
                          
-  cloud-localds user-data.img user-data  
+  c) cloud-localds user-data.img user-data  
                          
 9) Now run the below command.    
    sudo qemu-system-x86_64 -enable-kvm -hda bionic-server-cloudimg-amd64.img -drive "file=user-data.img,format=raw" -m 512 -curses -nographic   
