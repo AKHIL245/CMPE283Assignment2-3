@@ -27,8 +27,12 @@
 #include "pmu.h"
 u32 total_exits = 0;
 EXPORT_SYMBOL(total_exits);
+s64 numberof_eachexit_reason[75];
+EXPORT_SYMBOL(numberof_eachexit_reason);
 u64 totaltime_exits = 0;
 EXPORT_SYMBOL(totaltime_exits);
+u64 numberof_eachexit_proc_cycles[75];
+EXPORT_SYMBOL(numberof_eachexit_proc_cycles);
 /*
  * Unlike "struct cpuinfo_x86.x86_capability", kvm_cpu_caps doesn't need to be
  * aligned to sizeof(unsigned long) because it's not accessed via bitops.
@@ -1499,6 +1503,7 @@ EXPORT_SYMBOL_GPL(kvm_cpuid);
 int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 {
 	u32 eax, ebx, ecx, edx;
+	u64 eachexit_proc_cycles;
 
 	if (cpuid_fault_enabled(vcpu) && !kvm_require_cpl(vcpu, 0))
 		return 1;
@@ -1514,6 +1519,43 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
 		ebx = (totaltime_exits >> 32);
 		ecx = (totaltime_exits & 0xffffffff);
 	} 
+	else if ( (eax == 0x4ffffffe) || 
+			  (eax == 0x4fffffff) ) {		
+		if (ecx < 0 || ecx > 69 || 
+			ecx == 35 || 
+			ecx == 38 || 
+			ecx == 42 ) {			
+			printk(KERN_INFO "ecx contains an exittype(%u) that is not defined in SDM\n", ecx);
+			eax = 0;
+			ebx = 0;
+			ecx = 0;
+			edx = 0xffffffff;
+		}
+		else if (numberof_eachexit_reason[ecx] < 0 ) {			
+			printk(KERN_INFO "ecx contains an exit_type(%u) that is not enabled by KVM\n", ecx);
+			eax = 0;
+			ebx = 0;
+			ecx = 0;
+			edx = 0;
+		}
+			else if (eax == 0x4ffffffe){
+				printk(KERN_INFO "Exit number %u. Total number of exits for the exit number provided=%lld\n", 
+						ecx, numberof_eachexit_reason[ecx]);
+						eax = numberof_eachexit_reason[ecx];
+						ebx = 0;
+						ecx = 0;
+						edx = 0;
+			}
+			else if (eax == 0x4fffffff){
+				eachexit_proc_cycles = numberof_eachexit_proc_cycles[ecx];
+				printk(KERN_INFO "Exit number %u. Total time spent processing the exit number provided=%llu\n", 
+						ecx, eachexit_proc_cycles);					
+						eax = 0;
+						ebx = (eachexit_proc_cycles >> 32);
+						ecx = (eachexit_proc_cycles & 0xffffffff);
+						edx = 0;
+			}
+	}
 	else {
 		kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, false);
 	}
