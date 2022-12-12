@@ -70,7 +70,9 @@
 MODULE_AUTHOR("Qumranet");
 MODULE_LICENSE("GPL");
 extern u32 total_exits;
+extern s64 numberof_eachexit_reason[75];
 extern u32 totaltime_exits;
+extern u64 numberof_eachexit_proc_cycles[75];
 #ifdef MODULE
 static const struct x86_cpu_id vmx_cpu_id[] = {
 	X86_MATCH_FEATURE(X86_FEATURE_VMX, NULL),
@@ -6283,13 +6285,14 @@ void dump_vmcs(struct kvm_vcpu *vcpu)
  */
 static int __vmx_handle_exit(struct kvm_vcpu *vcpu, fastpath_t exit_fastpath)
 {
-	u64 rdtsc_value = rdtsc();
 	struct vcpu_vmx *vmx = to_vmx(vcpu);
 	union vmx_exit_reason exit_reason = vmx->exit_reason;
 	u32 vectoring_info = vmx->idt_vectoring_info;
 	u16 exit_handler_index;
 	total_exits++;
-
+        if (exit_reason.basic < 70 ||
+		!(numberof_eachexit_reason[exit_reason.basic] < 0 ))
+		numberof_eachexit_reason[exit_reason.basic]++;
 	/*
 	 * Flush logged GPAs PML buffer, this will make dirty_bitmap more
 	 * updated. Another good is, in kvm_vm_ioctl_get_dirty_log, before
@@ -6446,10 +6449,11 @@ static int __vmx_handle_exit(struct kvm_vcpu *vcpu, fastpath_t exit_fastpath)
 						kvm_vmx_max_exit_handlers);
 	if (!kvm_vmx_exit_handlers[exit_handler_index])
 		goto unexpected_vmexit;
-        totaltime_exits = totaltime_exits + (rdtsc() - rdtsc_value);
 	return kvm_vmx_exit_handlers[exit_handler_index](vcpu);
 
 unexpected_vmexit:
+	if (exit_reason.basic < 70 )
+		numberof_eachexit_reason[exit_reason.basic] = -1;
 	vcpu_unimpl(vcpu, "vmx: unexpected exit reason 0x%x\n",
 		    exit_reason.full);
 	dump_vmcs(vcpu);
@@ -6464,8 +6468,16 @@ unexpected_vmexit:
 
 static int vmx_handle_exit(struct kvm_vcpu *vcpu, fastpath_t exit_fastpath)
 {
+	u16 exit_reason_basic;
+	u64 rdtsc_value = rdtsc();
 	int ret = __vmx_handle_exit(vcpu, exit_fastpath);
-
+        totaltime_exits = totaltime_exits + (rdtsc() - rdtsc_value);
+	exit_reason_basic = (u16)to_vmx(vcpu)->exit_reason.basic;
+	if(exit_reason_basic < 70) {
+	numberof_eachexit_proc_cycles[exit_reason_basic] = 
+			numberof_eachexit_proc_cycles[exit_reason_basic] +
+			(rdtsc() - rdtsc_value);			
+	}
 	/*
 	 * Exit to user space when bus lock detected to inform that there is
 	 * a bus lock in guest.
